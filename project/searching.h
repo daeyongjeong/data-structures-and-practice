@@ -7,9 +7,11 @@ void hash_print();
 void data_print(RecordNode *pos);
 
 void searching(char *word);
-void data_sort(RecordNode *pos);
-void swap(DataNode *a, DataNode *b);
-void data_search(RecordNode *pos);
-void file_search(char *word, char *file_name, int word_count);
+void search_record(char *word);
+void sort_data(RecordNode *pos);
+void swap_data(DataNode *a, DataNode *b);
+void search_data(RecordNode *pos);
+void search_file(char *word, DataNode *data);
+int str_match(char *str1, char *str2);
 
 #endif

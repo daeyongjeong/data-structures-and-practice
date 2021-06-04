@@ -14,25 +14,27 @@ static int number_of_comparisons = 0;
 void indexing()
 {
     char file_name[FILE_NAME_LENGTH];
+    printf("INDEXING...\n\n");
     for (int i = 0; i < 4; i++)
     {
         sprintf(file_name, "doc%03d.txt", i + 1);
-        hash_parse_insert(file_name);
+        parse_file(file_name);
     }
     printf("Total number of documents: %d\n", number_of_documents);
     printf("Total number of indexed words: %d\n", number_of_indexed_words);
     printf("Total number of comparisons: %d\n\n", number_of_comparisons);
 }
 
-void hash_parse_insert(char *file_name)
+void parse_file(char *file_name)
 {
     FILE *fp = fopen(file_name, "r");
-    const char *DELIMITER = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
-
     if (fp == NULL)
         return;
+
+    const char *DELIMITER = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
     char line[255];
     char *token;
+    int offset = 0;
 
     while (fgets(line, 255, fp))
     {
@@ -40,7 +42,8 @@ void hash_parse_insert(char *file_name)
         while (token != NULL)
         {
             str_tolower(token);
-            hash_insert(token, file_name);
+            insert_record(token, offset, file_name);
+            offset++;
             token = strtok(NULL, DELIMITER);
         }
     }
@@ -55,7 +58,7 @@ char *str_tolower(char *str)
     return str;
 }
 
-void hash_insert(char *word, char *file_name)
+void insert_record(char *word, int offset, char *file_name)
 {
     int key = hash(word);
     RecordNode *cur, *prev = NULL;
@@ -65,7 +68,7 @@ void hash_insert(char *word, char *file_name)
         number_of_comparisons++;
         if (strcmp(cur->word, word) == 0)
         {
-            data_insert(cur, file_name);
+            insert_data(cur, offset, file_name);
             return;
         }
     }
@@ -74,7 +77,7 @@ void hash_insert(char *word, char *file_name)
     strcpy(new_node->word, word);
     new_node->data = NULL;
     new_node->next = NULL;
-    data_insert(new_node, file_name);
+    insert_data(new_node, offset, file_name);
     if (prev)
         prev->next = new_node;
     else
@@ -82,7 +85,7 @@ void hash_insert(char *word, char *file_name)
     number_of_indexed_words++;
 }
 
-void data_insert(RecordNode *pos, char *file_name)
+void insert_data(RecordNode *pos, int offset, char *file_name)
 {
     DataNode *cur, *prev = NULL;
 

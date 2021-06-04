@@ -8,11 +8,11 @@ typedef struct data_node
     struct data_node *next;
 } DataNode;
 
-typedef struct hash_node
+typedef struct record_node
 {
     char word[WORD_SIZE];
     DataNode *data;
-    struct hash_node *next;
+    struct record_node *next;
 } HashNode;
 
 HashNode *hash_table[TABLE_SIZE];
@@ -30,7 +30,7 @@ void data_insert(HashNode *pos, char *file_name);
 void hash_print();
 void data_print(HashNode *pos);
 unsigned long hash(unsigned char *str); // djb2
-void hash_search(char *word);
+void searching(char *word);
 void data_sort(HashNode *pos);
 void swap(DataNode *a, DataNode *b);
 void data_search(HashNode *pos);

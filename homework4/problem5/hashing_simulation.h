@@ -8,10 +8,6 @@ typedef struct element
     int value;
 } Element;
 
-Element hash_table[TABLE_SIZE];
-int hash_table_size; // to track loading density
-int number_of_comparisons;
-
 void simulation(double loading_density);
 void clear_hash_table();
 Element get_random_element();

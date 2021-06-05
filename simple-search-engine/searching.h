@@ -9,6 +9,7 @@ void data_print(RecordNode *pos);
 void searching(char *word);
 void search_record(char *word);
 void sort_data(RecordNode *pos);
+void reverse_data(RecordNode *pos);
 void swap_data(DataNode *a, DataNode *b);
 void search_data(RecordNode *pos);
 void search_file(char *word, DataNode *data);

@@ -6,6 +6,7 @@
 #include "hash.h"
 #include "indexing.h"
 #include "inverted_index.h"
+#include "str_tolower.h"
 
 static int number_of_documents = 0;
 static int number_of_indexed_words = 0;
@@ -14,8 +15,9 @@ static int number_of_comparisons = 0;
 void indexing()
 {
     char file_name[FILE_NAME_LENGTH];
+
     printf("INDEXING...\n\n");
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 100; i++)
     {
         sprintf(file_name, "doc%03d.txt", i + 1);
         parse_file(file_name);
@@ -49,13 +51,6 @@ void parse_file(char *file_name)
     }
     fclose(fp);
     number_of_documents++;
-}
-
-char *str_tolower(char *str)
-{
-    for (char *p = str; *p; p++)
-        *p = tolower(*p);
-    return str;
 }
 
 void insert_record(char *word, int offset, char *file_name)

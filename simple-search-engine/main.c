@@ -4,6 +4,6 @@
 int main()
 {
     indexing();
-    searching("computer");
+    searching("bingley");
     return 0;
 }

@@ -4,6 +4,7 @@
 
 #include "hash.h"
 #include "searching.h"
+#include "str_tolower.h"
 
 static int number_of_comparisons = 0;
 
@@ -16,9 +17,8 @@ void searching(char *word)
 void search_record(char *word)
 {
     int key = hash(word);
-    RecordNode *cur;
 
-    for (cur = inverted_index[key]; cur; cur = cur->next)
+    for (RecordNode *cur = inverted_index[key]; cur; cur = cur->next)
     {
         number_of_comparisons++;
         if (strcmp(cur->word, word) == 0)
@@ -32,20 +32,37 @@ void search_record(char *word)
 
 void sort_data(RecordNode *pos)
 {
-    DataNode *cur = pos->data, *temp;
-    while (cur != NULL)
+    DataNode *pi = pos->data;
+    DataNode *pj, *temp;
+
+    while (pi != NULL)
     {
-        temp = cur;
-        while (temp->next != NULL) //travel till the second last element
+        pj = pi;
+        while (pj->next != NULL)
         {
             number_of_comparisons++;
-            if (temp->word_count < temp->next->word_count) // compare the data of the nodes
-                swap_data(temp, temp->next);
-
-            temp = temp->next; // move to the next element
+            if (pj->word_count > pj->next->word_count)
+                swap_data(pj, pj->next);
+            pj = pj->next;
         }
-        cur = cur->next; // move to the next node
+        pi = pi->next;
     }
+    reverse_data(pos);
+}
+
+void reverse_data(RecordNode *pos)
+{
+    DataNode *prev = NULL;
+    DataNode *cur = pos->data;
+    DataNode *next = NULL;
+    while (cur != NULL)
+    {
+        next = cur->next;
+        cur->next = prev;
+        prev = cur;
+        cur = next;
+    }
+    pos->data = prev;
 }
 
 void swap_data(DataNode *a, DataNode *b)
@@ -83,6 +100,7 @@ void search_file(char *word, DataNode *data)
     char *token, *last;
     int offset = 0;
     int found = 0;
+    int target;
 
     while (fgets(line, 255, fp) && found < data->word_count)
     {
@@ -90,25 +108,38 @@ void search_file(char *word, DataNode *data)
         while (token != NULL)
         {
             strcpy(word_around_token[offset % 13], token);
-
-            if (offset >= 3 && str_match(word_around_token[(offset - 3 + 13) % 13], word))
+            target = offset - 3;
+            if (offset >= 3 && str_match(word_around_token[(target + 13) % 13], word))
             {
                 found++;
-                if (offset >= 7)
+                if (target > 3)
                     printf("... ");
-                for (int i = 6; i > 3; i--)
-                    if (offset >= i)
-                        printf("%s ", word_around_token[(offset - i + 13) % 13]);
-                for (int i = 3; i >= 0; i--)
-                    printf("%s ", word_around_token[(offset - i + 13) % 13]);
+                for (int j = -3; j <= 3; j++)
+                    if (target + j >= 0 && target + j <= offset)
+                        printf("%s ", word_around_token[(target + j + 13) % 13]);
                 printf("...\n");
             }
             offset++;
             token = strtok_r(NULL, DELIMITER, &last);
         }
     }
-    printf("\n");
 
+    for (int i = 3; i > 0; i--)
+    {
+        target = offset - i;
+        if (target >= 0 && str_match(word_around_token[(target + 13) % 13], word))
+        {
+            found++;
+            if (target > 3)
+                printf("... ");
+            for (int j = -3; j <= 3; j++)
+                if (target + j >= 0 && target + j < offset)
+                    printf("%s ", word_around_token[(target + j + 13) % 13]);
+            printf("\n");
+        }
+    }
+
+    printf("\n");
     fclose(fp);
 }
 
@@ -119,6 +150,7 @@ int str_match(char *str1, char *str2)
     char *token, *last;
 
     strcpy(temp, str1);
+    str_tolower(temp);
     token = strtok_r(temp, DELIMITER, &last);
 
     while (token != NULL)

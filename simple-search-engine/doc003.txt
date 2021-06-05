@@ -1,2 +1,2 @@
-Data structures are implemented using the data types, references and 
-operations on them provided by a programming language.
+"My dear Mr. Bennet," said his lady to him one day, "have you heard that
+Netherfield Park is let at last?"

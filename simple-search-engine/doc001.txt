@@ -1,3 +1,2 @@
-A "data structure" is a way of storing data in a computer so that it can be 
-used efficiently. Often a carefully chosen data structure will allow a more 
-efficient algorithm to be used.
+It is a truth universally acknowledged, that a single man in possession
+of a good fortune, must be in want of a wife.

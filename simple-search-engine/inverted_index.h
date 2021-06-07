@@ -15,7 +15,7 @@ typedef struct ref_node
 typedef struct record_node
 {
     char *word;
-    RefNode *reflist;
+    RefNode *refhead;
     struct record_node *next;
 } RecordNode;
 

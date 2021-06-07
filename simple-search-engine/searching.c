@@ -8,32 +8,34 @@
 
 static int comparisons = 0;
 
-void searching(char *word)
+void searching(const char *word)
 {
     search_record(word);
     printf("Total number of comparison: %d\n", comparisons);
 }
 
-void search_record(char *word)
+void search_record(const char *word)
 {
     int key = hash(word);
+    RecordNode *p = inverted_index[key];
 
-    for (RecordNode *cur = inverted_index[key]; cur; cur = cur->next)
+    while (p != NULL)
     {
         comparisons++;
-        if (strcmp(cur->word, word) == 0)
+        if (strcmp(p->word, word) == 0)
         {
-            sort_ref(cur);
-            search_reflist(cur);
+            sort_ref(p);
+            search_reflist(p);
             return;
         }
+        p = p->next;
     }
 }
 
-void sort_ref(RecordNode *pos)
+void sort_ref(const RecordNode *parent)
 {
-    RefNode *pi = pos->reflist;
-    RefNode *pj, *temp;
+    RefNode *pi = parent->refhead;
+    RefNode *pj;
 
     while (pi != NULL)
     {
@@ -47,94 +49,99 @@ void sort_ref(RecordNode *pos)
         }
         pi = pi->next;
     }
-    reverse_reflist(pos);
+    reverse_reflist(parent);
 }
 
-void reverse_reflist(RecordNode *pos)
+void reverse_reflist(RecordNode *parent)
 {
+    RefNode *p = parent->refhead;
     RefNode *prev = NULL;
-    RefNode *cur = pos->reflist;
     RefNode *next = NULL;
-    while (cur != NULL)
+
+    while (p != NULL)
     {
-        next = cur->next;
-        cur->next = prev;
-        prev = cur;
-        cur = next;
+        next = p->next;
+        p->next = prev;
+        prev = p;
+        p = next;
     }
-    pos->reflist = prev;
+    parent->refhead = prev;
 }
 
 void swap_refnode(RefNode *a, RefNode *b)
 {
-    char temp_file_name[FILENAME_LENGTH];
+    char temp_filename[FILENAME_LENGTH];
     int temp_word_count;
-    strcpy(temp_file_name, a->filename);
+    strcpy(temp_filename, a->filename);
     strcpy(a->filename, b->filename);
-    strcpy(b->filename, temp_file_name);
+    strcpy(b->filename, temp_filename);
     temp_word_count = a->word_count;
     a->word_count = b->word_count;
     b->word_count = temp_word_count;
 }
 
-void search_reflist(RecordNode *pos)
+void search_reflist(const RecordNode *parent)
 {
-    RefNode *cur;
+    RefNode *p = parent->refhead;
 
-    for (cur = pos->reflist; cur; cur = cur->next)
+    while (p != NULL)
     {
-        printf("%s (%s: %d)\n", cur->filename, pos->word, cur->word_count);
-        search_file(pos->word, cur);
+        printf("%s (%s: %d)\n", p->filename, parent->word, p->word_count);
+        search_file(parent->word, p);
+        p = p->next;
     }
 }
 
-void search_file(char *word, RefNode *data)
+void search_file(const char *word, const RefNode *data)
 {
-    FILE *fp = fopen(data->filename, "r");
-    if (fp == NULL)
-        return;
+    const char *DELIM = "\t\v\f\r\n ";
+    const int MASK = 7;
 
-    const char *DELIMITER = "\t\v\f\r\n ";
-    char line[255];
-    char recent_block[13][WORD_LENGTH];
-    char *token, *last;
-    int offset = 0;
+    FILE *fp;
+    char buf[255];
     int found = 0;
+    char *token;
+    char **last;
+    char recent_block[MASK][WORD_LENGTH];
+    int offset = 0;
     int target;
 
-    while (fgets(line, 255, fp) && found < data->word_count)
+    if (fp = fopen(data->filename, "r") == NULL)
+        return;
+
+    while (fgets(buf, 255, fp) && found < data->word_count)
     {
-        token = strtok_r(line, DELIMITER, &last);
+        token = strtok_r(buf, DELIM, last);
         while (token != NULL)
         {
-            strcpy(recent_block[offset % 13], token);
+            strcpy(recent_block[offset % MASK], token);
             target = offset - 3;
-            if (offset >= 3 && str_match(recent_block[(target + 13) % 13], word))
+            if (target >= 0 && block_word_match(recent_block[target % MASK], word))
             {
                 found++;
                 if (target > 3)
                     printf("... ");
                 for (int j = -3; j <= 3; j++)
                     if (target + j >= 0 && target + j <= offset)
-                        printf("%s ", recent_block[(target + j + 13) % 13]);
+                        printf("%s ", recent_block[(target + j + MASK) % MASK]);
                 printf("...\n");
             }
             offset++;
-            token = strtok_r(NULL, DELIMITER, &last);
+            token = strtok_r(NULL, DELIM, last);
         }
     }
 
     for (int i = 3; i > 0; i--)
     {
         target = offset - i;
-        if (target >= 0 && str_match(recent_block[(target + 13) % 13], word))
+        if (target >= 0 && block_word_match(recent_block[target % MASK], word))
         {
             found++;
             if (target > 3)
                 printf("... ");
             for (int j = -3; j <= 3; j++)
                 if (target + j >= 0 && target + j < offset)
-                    printf("%s ", recent_block[(target + j + 13) % 13]);
+                    printf("%s ", recent_block[(target + j + MASK) % MASK]);
             printf("\n");
         }
     }
@@ -143,26 +150,24 @@ void search_file(char *word, RefNode *data)
     fclose(fp);
 }
 
-int str_match(char *str1, char *str2)
+int block_word_match(const char *block, const char *word)
 {
-    const char *DELIMITER = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
-    char temp[255];
-    char *token, *last;
+    const char *DELIM = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
 
-    strcpy(temp, str1);
+    char *token;
+    char **last;
+    char temp[255];
+
+    strcpy(temp, block);
     str_tolower(temp);
-    token = strtok_r(temp, DELIMITER, &last);
+    token = strtok_r(temp, DELIM, last);
 
     while (token != NULL)
     {
         comparisons++;
-        if (strcmp(token, str2) == 0)
-        {
-            free(temp);
+        if (strcmp(token, word) == 0)
             return 1;
-        }
-        token = strtok_r(NULL, DELIMITER, &last);
+        token = strtok_r(NULL, DELIM, last);
     }
-    free(temp);
     return 0;
 }

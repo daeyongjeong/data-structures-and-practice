@@ -3,19 +3,19 @@
 
 #define TABLE_SIZE 10000
 #define WORD_LENGTH 100
-#define FILE_NAME_LENGTH 255
+#define FILENAME_LENGTH 255
 
-typedef struct data_node
+typedef struct ref_node
 {
-    char file_name[FILE_NAME_LENGTH];
+    char filename[FILENAME_LENGTH];
     int word_count;
-    struct data_node *next;
-} DataNode;
+    struct ref_node *next;
+} RefNode;
 
 typedef struct record_node
 {
-    char word[WORD_LENGTH];
-    DataNode *data;
+    char *word;
+    RefNode *reflist;
     struct record_node *next;
 } RecordNode;
 

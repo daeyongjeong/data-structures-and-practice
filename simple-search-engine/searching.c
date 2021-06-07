@@ -6,12 +6,12 @@
 #include "searching.h"
 #include "str_tolower.h"
 
-static int number_of_comparisons = 0;
+static int comparisons = 0;
 
 void searching(char *word)
 {
     search_record(word);
-    printf("Total number of comparison: %d\n", number_of_comparisons);
+    printf("Total number of comparison: %d\n", comparisons);
 }
 
 void search_record(char *word)
@@ -20,41 +20,41 @@ void search_record(char *word)
 
     for (RecordNode *cur = inverted_index[key]; cur; cur = cur->next)
     {
-        number_of_comparisons++;
+        comparisons++;
         if (strcmp(cur->word, word) == 0)
         {
-            sort_data(cur);
-            search_data(cur);
+            sort_ref(cur);
+            search_reflist(cur);
             return;
         }
     }
 }
 
-void sort_data(RecordNode *pos)
+void sort_ref(RecordNode *pos)
 {
-    DataNode *pi = pos->data;
-    DataNode *pj, *temp;
+    RefNode *pi = pos->reflist;
+    RefNode *pj, *temp;
 
     while (pi != NULL)
     {
         pj = pi;
         while (pj->next != NULL)
         {
-            number_of_comparisons++;
+            comparisons++;
             if (pj->word_count > pj->next->word_count)
-                swap_data(pj, pj->next);
+                swap_refnode(pj, pj->next);
             pj = pj->next;
         }
         pi = pi->next;
     }
-    reverse_data(pos);
+    reverse_reflist(pos);
 }
 
-void reverse_data(RecordNode *pos)
+void reverse_reflist(RecordNode *pos)
 {
-    DataNode *prev = NULL;
-    DataNode *cur = pos->data;
-    DataNode *next = NULL;
+    RefNode *prev = NULL;
+    RefNode *cur = pos->reflist;
+    RefNode *next = NULL;
     while (cur != NULL)
     {
         next = cur->next;
@@ -62,41 +62,41 @@ void reverse_data(RecordNode *pos)
         prev = cur;
         cur = next;
     }
-    pos->data = prev;
+    pos->reflist = prev;
 }
 
-void swap_data(DataNode *a, DataNode *b)
+void swap_refnode(RefNode *a, RefNode *b)
 {
-    char temp_file_name[FILE_NAME_LENGTH];
+    char temp_file_name[FILENAME_LENGTH];
     int temp_word_count;
-    strcpy(temp_file_name, a->file_name);
-    strcpy(a->file_name, b->file_name);
-    strcpy(b->file_name, temp_file_name);
+    strcpy(temp_file_name, a->filename);
+    strcpy(a->filename, b->filename);
+    strcpy(b->filename, temp_file_name);
     temp_word_count = a->word_count;
     a->word_count = b->word_count;
     b->word_count = temp_word_count;
 }
 
-void search_data(RecordNode *pos)
+void search_reflist(RecordNode *pos)
 {
-    DataNode *cur;
+    RefNode *cur;
 
-    for (cur = pos->data; cur; cur = cur->next)
+    for (cur = pos->reflist; cur; cur = cur->next)
     {
-        printf("%s (%s: %d)\n", cur->file_name, pos->word, cur->word_count);
+        printf("%s (%s: %d)\n", cur->filename, pos->word, cur->word_count);
         search_file(pos->word, cur);
     }
 }
 
-void search_file(char *word, DataNode *data)
+void search_file(char *word, RefNode *data)
 {
-    FILE *fp = fopen(data->file_name, "r");
+    FILE *fp = fopen(data->filename, "r");
     if (fp == NULL)
         return;
 
     const char *DELIMITER = "\t\v\f\r\n ";
     char line[255];
-    char word_around_token[13][WORD_LENGTH];
+    char recent_block[13][WORD_LENGTH];
     char *token, *last;
     int offset = 0;
     int found = 0;
@@ -107,16 +107,16 @@ void search_file(char *word, DataNode *data)
         token = strtok_r(line, DELIMITER, &last);
         while (token != NULL)
         {
-            strcpy(word_around_token[offset % 13], token);
+            strcpy(recent_block[offset % 13], token);
             target = offset - 3;
-            if (offset >= 3 && str_match(word_around_token[(target + 13) % 13], word))
+            if (offset >= 3 && str_match(recent_block[(target + 13) % 13], word))
             {
                 found++;
                 if (target > 3)
                     printf("... ");
                 for (int j = -3; j <= 3; j++)
                     if (target + j >= 0 && target + j <= offset)
-                        printf("%s ", word_around_token[(target + j + 13) % 13]);
+                        printf("%s ", recent_block[(target + j + 13) % 13]);
                 printf("...\n");
             }
             offset++;
@@ -127,14 +127,14 @@ void search_file(char *word, DataNode *data)
     for (int i = 3; i > 0; i--)
     {
         target = offset - i;
-        if (target >= 0 && str_match(word_around_token[(target + 13) % 13], word))
+        if (target >= 0 && str_match(recent_block[(target + 13) % 13], word))
         {
             found++;
             if (target > 3)
                 printf("... ");
             for (int j = -3; j <= 3; j++)
                 if (target + j >= 0 && target + j < offset)
-                    printf("%s ", word_around_token[(target + j + 13) % 13]);
+                    printf("%s ", recent_block[(target + j + 13) % 13]);
             printf("\n");
         }
     }
@@ -155,10 +155,14 @@ int str_match(char *str1, char *str2)
 
     while (token != NULL)
     {
-        number_of_comparisons++;
+        comparisons++;
         if (strcmp(token, str2) == 0)
+        {
+            free(temp);
             return 1;
+        }
         token = strtok_r(NULL, DELIMITER, &last);
     }
+    free(temp);
     return 0;
 }

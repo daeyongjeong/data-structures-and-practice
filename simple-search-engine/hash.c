@@ -8,5 +8,5 @@ unsigned long hash(unsigned char *str) // djb2
     while (c = *str++)
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
 
-    return hash % 10000;
+    return hash;
 }

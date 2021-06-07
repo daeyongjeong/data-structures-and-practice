@@ -34,21 +34,22 @@ void parse_file(const char *filename)
     FILE *fp;
     char buf[255];
     char *token;
-    char **last;
+    char *last;
     int offset = 0;
 
-    if (fp = fopen(filename, "r") == NULL)
+    fp = fopen(filename, "r");
+    if (fp == NULL)
         return;
 
     while (fgets(buf, 255, fp))
     {
-        token = strtok_r(buf, DELIM, last);
+        token = strtok_r(buf, DELIM, &last);
         while (token != NULL)
         {
             str_tolower(token);
             insert_record(token, offset, filename);
             offset++;
-            token = strtok_r(NULL, DELIM, last);
+            token = strtok_r(NULL, DELIM, &last);
         }
     }
 
@@ -56,10 +57,10 @@ void parse_file(const char *filename)
     found_docs++;
 }
 
-void insert_record(const char *word, const int offset, const char *filename)
+void insert_record(char *word, const int offset, const char *filename)
 {
-    int key = hash(word);
-    RecordNode *p = inverted_index[key];
+    int index = hash(word) % TABLE_SIZE;
+    RecordNode *p = inverted_index[index];
     RecordNode *prev = NULL;
     RecordNode *new_node;
 
@@ -71,10 +72,12 @@ void insert_record(const char *word, const int offset, const char *filename)
             insert_data(p, offset, filename);
             return;
         }
+        prev = p;
         p = p->next;
     }
 
     new_node = (RecordNode *)malloc(sizeof(RecordNode));
+    new_node->word = (char *)malloc(sizeof(char) * strlen(word));
     strcpy(new_node->word, word);
     new_node->refhead = NULL;
     new_node->next = NULL;
@@ -83,7 +86,7 @@ void insert_record(const char *word, const int offset, const char *filename)
     if (prev)
         prev->next = new_node;
     else
-        inverted_index[key] = new_node;
+        inverted_index[index] = new_node;
 
     indexed_words++;
 }
@@ -102,6 +105,7 @@ void insert_data(RecordNode *parent, const int offset, const char *filename)
             p->word_count++;
             return;
         }
+        prev = p;
         p = p->next;
     }
 

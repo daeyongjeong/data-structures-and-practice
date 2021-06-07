@@ -58,8 +58,8 @@ void parse_file(const char *filename)
 
 void insert_record(const char *word, const int offset, const char *filename)
 {
-    int key = hash(word);
-    RecordNode *p = inverted_index[key];
+    int index = hash(word) % TABLE_SIZE;
+    RecordNode *p = inverted_index[index];
     RecordNode *prev = NULL;
     RecordNode *new_node;
 
@@ -83,7 +83,7 @@ void insert_record(const char *word, const int offset, const char *filename)
     if (prev)
         prev->next = new_node;
     else
-        inverted_index[key] = new_node;
+        inverted_index[index] = new_node;
 
     indexed_words++;
 }

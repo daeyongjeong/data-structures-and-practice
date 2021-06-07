@@ -1,7 +1,7 @@
 #ifndef _INVERTED_INDEX_H
 #define _INVERTED_INDEX_H
 
-#define TABLE_SIZE 10000
+#define TABLE_SIZE 9973
 #define WORD_LENGTH 100
 #define FILENAME_LENGTH 255
 

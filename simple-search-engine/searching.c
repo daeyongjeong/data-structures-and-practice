@@ -16,8 +16,8 @@ void searching(const char *word)
 
 void search_record(const char *word)
 {
-    int key = hash(word);
-    RecordNode *p = inverted_index[key];
+    int index = hash(word) % TABLE_SIZE;
+    RecordNode *p = inverted_index[index];
 
     while (p != NULL)
     {

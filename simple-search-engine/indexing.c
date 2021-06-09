@@ -8,98 +8,114 @@
 #include "inverted_index.h"
 #include "str_tolower.h"
 
-static int number_of_documents = 0;
-static int number_of_indexed_words = 0;
-static int number_of_comparisons = 0;
+static int found_docs = 0;
+static int indexed_words = 0;
+static int comparisons = 0;
 
 void indexing()
 {
-    char file_name[FILE_NAME_LENGTH];
+    char filename[FILENAME_LENGTH];
 
     printf("INDEXING...\n\n");
     for (int i = 0; i < 100; i++)
     {
-        sprintf(file_name, "doc%03d.txt", i + 1);
-        parse_file(file_name);
+        sprintf(filename, "doc%03d.txt", i + 1);
+        parse_file(filename);
     }
-    printf("Total number of documents: %d\n", number_of_documents);
-    printf("Total number of indexed words: %d\n", number_of_indexed_words);
-    printf("Total number of comparisons: %d\n\n", number_of_comparisons);
+    printf("Total number of documents found: %d\n", found_docs);
+    printf("Total number of indexed words: %d\n", indexed_words);
+    printf("Total number of comparisons: %d\n\n", comparisons);
 }
 
-void parse_file(char *file_name)
+void parse_file(const char *filename)
 {
-    FILE *fp = fopen(file_name, "r");
+    const char *DELIM = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
+
+    FILE *fp;
+    char buf[255];
+    char *token;
+    char *last;
+    int offset = 0;
+
+    fp = fopen(filename, "r");
     if (fp == NULL)
         return;
 
-    const char *DELIMITER = "\a\b\t\n\v\f\r !\"#$%%&'()*+,-./0123456789:;<=>?@[\\]^_`{|}~";
-    char line[255];
-    char *token;
-    int offset = 0;
-
-    while (fgets(line, 255, fp))
+    while (fgets(buf, 255, fp))
     {
-        token = strtok(line, DELIMITER);
+        token = strtok_r(buf, DELIM, &last);
         while (token != NULL)
         {
             str_tolower(token);
-            insert_record(token, offset, file_name);
+            insert_record(token, offset, filename);
             offset++;
-            token = strtok(NULL, DELIMITER);
+            token = strtok_r(NULL, DELIM, &last);
         }
     }
+
     fclose(fp);
-    number_of_documents++;
+    found_docs++;
 }
 
-void insert_record(char *word, int offset, char *file_name)
+void insert_record(char *word, const int offset, const char *filename)
 {
-    int key = hash(word);
-    RecordNode *cur, *prev = NULL;
+    int index = hash(word) % TABLE_SIZE;
+    RecordNode *p = inverted_index[index];
+    RecordNode *prev = NULL;
+    RecordNode *new_node;
 
-    for (cur = inverted_index[key]; cur; prev = cur, cur = cur->next)
+    while (p != NULL)
     {
-        number_of_comparisons++;
-        if (strcmp(cur->word, word) == 0)
+        comparisons++;
+        if (strcmp(p->word, word) == 0)
         {
-            insert_data(cur, offset, file_name);
+            insert_data(p, offset, filename);
             return;
         }
+        prev = p;
+        p = p->next;
     }
 
-    RecordNode *new_node = (RecordNode *)malloc(sizeof(RecordNode));
+    new_node = (RecordNode *)malloc(sizeof(RecordNode));
+    new_node->word = (char *)malloc(sizeof(char) * strlen(word));
     strcpy(new_node->word, word);
-    new_node->data = NULL;
+    new_node->refhead = NULL;
     new_node->next = NULL;
-    insert_data(new_node, offset, file_name);
+    insert_data(new_node, offset, filename);
+
     if (prev)
         prev->next = new_node;
     else
-        inverted_index[key] = new_node;
-    number_of_indexed_words++;
+        inverted_index[index] = new_node;
+
+    indexed_words++;
 }
 
-void insert_data(RecordNode *pos, int offset, char *file_name)
+void insert_data(RecordNode *parent, const int offset, const char *filename)
 {
-    DataNode *cur, *prev = NULL;
+    RefNode *p = parent->refhead;
+    RefNode *prev = NULL;
+    RefNode *new_node;
 
-    for (cur = pos->data; cur; prev = cur, cur = cur->next)
+    while (p != NULL)
     {
-        number_of_comparisons++;
-        if (strcmp(cur->file_name, file_name) == 0)
+        comparisons++;
+        if (strcmp(p->filename, filename) == 0)
         {
-            cur->word_count++;
+            p->word_count++;
             return;
         }
+        prev = p;
+        p = p->next;
     }
 
-    DataNode *new_node = (DataNode *)malloc(sizeof(DataNode));
-    strcpy(new_node->file_name, file_name);
+    new_node = (RefNode *)malloc(sizeof(RefNode));
+    strcpy(new_node->filename, filename);
     new_node->word_count = 1;
     new_node->next = NULL;
+
     if (prev)
         prev->next = new_node;
     else
-        pos->data = new_node;
+        parent->refhead = new_node;
 }

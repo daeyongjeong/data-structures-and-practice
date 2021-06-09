@@ -3,16 +3,14 @@
 
 #include "inverted_index.h"
 
-void hash_print();
-void data_print(RecordNode *pos);
-
 void searching(char *word);
 void search_record(char *word);
-void sort_data(RecordNode *pos);
-void reverse_data(RecordNode *pos);
-void swap_data(DataNode *a, DataNode *b);
-void search_data(RecordNode *pos);
-void search_file(char *word, DataNode *data);
-int str_match(char *str1, char *str2);
+int length(RecordNode *parent);
+int bubble_sort(RecordNode *parent, int count);
+RefNode *swap(RefNode *ptr1, RefNode *ptr2);
+void reverse_reflist(RecordNode *parent);
+void search_reflist(const RecordNode *parent);
+void search_file(const char *word, const RefNode *data);
+int block_word_match(const char *block, const char *word);
 
 #endif
